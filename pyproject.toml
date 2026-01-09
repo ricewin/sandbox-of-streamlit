@@ -1,0 +1,11 @@
+[project]
+name = "sandbox-of-streamlit"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "maplibre[shiny]>=0.3.6",
+    "pydeck>=0.9.1",
+    "streamlit>=1.52.2",
+]
