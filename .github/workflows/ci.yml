@@ -37,24 +37,26 @@ jobs:
 
       - name: Install uv (v0.9.26) and dependencies
         run: |
-          # Install specific uv version known for this project
           pip install "uv==0.9.26" || true
-          # Try the recommended sync command for uv 0.9.26
           if [ -f uv.lock ]; then
             uv sync || uv install || uv up || true
           fi
-          # Fallback to requirements.txt if present
           if [ -f requirements.txt ]; then
             pip install -r requirements.txt || true
           fi
 
       - name: Ruff lint
         run: |
-          # fail the job on lint errors
+          if [ -d .venv ]; then
+            export PATH=$PWD/.venv/bin:$PATH
+          fi
           ruff check .
 
       - name: Run tests
         run: |
+          if [ -d .venv ]; then
+            export PATH=$PWD/.venv/bin:$PATH
+          fi
           if [ -d tests ] || ls *_test.py 1> /dev/null 2>&1; then
             pytest -q
           else
@@ -63,6 +65,9 @@ jobs:
 
       - name: Smoke test - streamlit import check
         run: |
+          if [ -d .venv ]; then
+            export PATH=$PWD/.venv/bin:$PATH
+          fi
           cat > /tmp/check_streamlit.py <<'PY'
           import importlib
           try:
