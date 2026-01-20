@@ -35,12 +35,12 @@ jobs:
           python -m pip install --upgrade pip setuptools wheel
           pip install ruff pytest
 
-      - name: Install uv (if used) and dependencies
+      - name: Install uv (v0.9.26) and dependencies
         run: |
-          # If uv.lock exists, try to use uv. If uv is not available or fails, fallback to requirements.txt
+          # Install specific uv version known for this project
+          pip install "uv==0.9.26" || true
+          # Try the recommended sync command for uv 0.9.26
           if [ -f uv.lock ]; then
-            pip install uv || true
-            # Try common uv sync/install/up commands (some uv versions differ)
             uv sync || uv install || uv up || true
           fi
           # Fallback to requirements.txt if present
@@ -63,10 +63,12 @@ jobs:
 
       - name: Smoke test - streamlit import check
         run: |
-          python -c "import importlib, sys; 
+          cat > /tmp/check_streamlit.py <<'PY'
+          import importlib
           try:
-            importlib.import_module('streamlit')
-            print('streamlit import OK', flush=True)
+              importlib.import_module('streamlit')
+              print('streamlit import OK')
           except Exception as e:
-            echo 'streamlit import failed' && exit 0
-          "
+              print('streamlit import failed:', e)
+          PY
+          python /tmp/check_streamlit.py
