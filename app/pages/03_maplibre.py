@@ -93,7 +93,7 @@ with tabs[1]:
         type=LayerType.CIRCLE,
         source=circle_source,
         paint={
-            "circle-radius": ["*", ["get", "value"], 0.3],  # 値に応じて半径を変更
+            "circle-radius": ["*", 0.3, ["get", "value"]],  # 値に応じて半径を変更
             "circle-color": [
                 "interpolate",
                 ["linear"],
@@ -140,9 +140,9 @@ with tabs[2]:
                 },
                 "properties": {"intensity": 1},
             }
-            for i in range(-20, 21)
-            for j in range(-20, 21)
-            if abs(i) + abs(j) < 15  # 円形の分布
+            for i in range(-14, 15)
+            for j in range(-(14 - abs(i)), (14 - abs(i)) + 1)
+            # abs(i) + abs(j) < 15 を満たす整数点のみを生成（円形の分布）
         ],
     }
 
@@ -229,7 +229,7 @@ with tabs[3]:
             "line-color": "#00aa00",
             "line-width": 4,
             "line-opacity": 0.8,
-            "line-dasharray": [2, 2],  # 破線
+            "line-dasharray": [4, 2],  # 破線（ズームや線幅に応じて調整可能）
         },
     )  # pyright: ignore[reportCallIssue]
 
