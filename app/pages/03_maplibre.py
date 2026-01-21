@@ -142,7 +142,7 @@ with tabs[2]:
             }
             for i in range(-14, 15)
             for j in range(-(14 - abs(i)), (14 - abs(i)) + 1)
-            # abs(i) + abs(j) < 15 を満たす整数点のみを生成（円形の分布）
+            # abs(i) + abs(j) <= 14 を満たす整数点のみを生成（ひし形の分布）
         ],
     }
 
