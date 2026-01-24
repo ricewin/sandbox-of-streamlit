@@ -146,9 +146,7 @@ with tabs[2]:
         ],
     }
 
-    heatmap_source = GeoJSONSource(
-        data=heatmap_data
-    )  # pyright: ignore[reportCallIssue]
+    heatmap_source = GeoJSONSource(data=heatmap_data)  # pyright: ignore[reportCallIssue]
 
     heatmap_layer = Layer(
         type=LayerType.HEATMAP,
@@ -289,9 +287,7 @@ with tabs[4]:
         ],
     }
 
-    polygon_source = GeoJSONSource(
-        data=polygon_data
-    )  # pyright: ignore[reportCallIssue]
+    polygon_source = GeoJSONSource(data=polygon_data)  # pyright: ignore[reportCallIssue]
 
     fill_layer = Layer(
         type=LayerType.FILL,
@@ -397,9 +393,7 @@ with tabs[5]:
         ],
     }
 
-    building_source = GeoJSONSource(
-        data=building_data
-    )  # pyright: ignore[reportCallIssue]
+    building_source = GeoJSONSource(data=building_data)  # pyright: ignore[reportCallIssue]
 
     extrusion_layer = Layer(
         type=LayerType.FILL_EXTRUSION,
