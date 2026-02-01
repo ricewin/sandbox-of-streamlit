@@ -8,6 +8,7 @@ def navigation() -> None:
             st.Page("pages/01_game.py", title="Simple Game"),
             st.Page("pages/02_pydeck.py", title="Plot Japan Map"),
             st.Page("pages/03_maplibre.py", title="Maplibre Map"),
+            st.Page("pages/04_shapefile_pydeck.py", title="Shapefile Visualization"),
         ],
         # "Resources": [
         #     st.Page("pages/learn.py", title="Learn about me"),
