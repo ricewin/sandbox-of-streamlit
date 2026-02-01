@@ -15,7 +15,6 @@ st.set_page_config(page_title="Shapefile Visualization", page_icon="🗾", layou
 MAX_TOOLTIP_PROPERTIES = 5  # Maximum number of properties to show in tooltip
 
 
-@st.cache_data
 def load_shapefile_from_upload(uploaded_files):
     """
     Load shapefile from uploaded files (.shp, .shx, .dbf, .prj)
@@ -41,6 +40,11 @@ def load_shapefile_from_upload(uploaded_files):
                 with open(file_path, "wb") as f:
                     f.write(file.read())
 
+            # Ensure that a .shp file was provided
+            if base_name is None:
+                st.error("Uploaded shapefile set must include a .shp file.")
+                return None
+
             # Read shapefile
             shp_path = os.path.join(tmpdir, f"{base_name}.shp")
             gdf = gpd.read_file(shp_path)
@@ -55,7 +59,6 @@ def load_shapefile_from_upload(uploaded_files):
         return None
 
 
-@st.cache_data
 def load_geojson_from_upload(uploaded_file):
     """
     Load GeoJSON from uploaded file
@@ -163,9 +166,7 @@ def get_center_and_zoom(gdf):
     return center_lat, center_lon, zoom
 
 
-def create_pydeck_map(
-    gdf, fill_color=[255, 235, 215], line_color=[255, 250, 205], opacity=0.5
-):
+def create_pydeck_map(gdf, fill_color=None, line_color=None, opacity=0.5):
     """
     Create a pydeck map from GeoDataFrame
 
@@ -178,6 +179,10 @@ def create_pydeck_map(
     Returns:
         pydeck.Deck object
     """
+    if fill_color is None:
+        fill_color = [255, 235, 215]
+    if line_color is None:
+        line_color = [255, 250, 205]
     # Convert to GeoJSON
     geojson_data = geodataframe_to_geojson(gdf)
 
@@ -307,10 +312,15 @@ if gdf is not None:
     with col1:
         st.metric("Number of Features", len(gdf))
     with col2:
-        st.metric("Geometry Type", gdf.geometry.type.value_counts().index[0])
+        if len(gdf) > 0:
+            geometry_type_metric = gdf.geometry.type.value_counts().index[0]
+        else:
+            geometry_type_metric = "N/A"
+        st.metric("Geometry Type", geometry_type_metric)
     with col3:
         if gdf.crs:
-            st.metric("CRS", f"EPSG:{gdf.crs.to_epsg()}")
+            epsg = gdf.crs.to_epsg()
+            st.metric("CRS", f"EPSG:{epsg}" if epsg else str(gdf.crs))
         else:
             st.metric("CRS", "Unknown")
 
