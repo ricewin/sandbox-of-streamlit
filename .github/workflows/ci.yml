@@ -51,6 +51,7 @@ jobs:
             export PATH=$PWD/.venv/bin:$PATH
           fi
           ruff check .
+          ruff format --check .
 
       - name: Run tests
         run: |
