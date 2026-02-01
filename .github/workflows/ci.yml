@@ -50,7 +50,8 @@ jobs:
           if [ -d .venv ]; then
             export PATH=$PWD/.venv/bin:$PATH
           fi
-          ruff check .
+          ruff check --fix .
+          ruff format .
 
       - name: Run tests
         run: |
