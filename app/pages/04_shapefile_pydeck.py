@@ -312,15 +312,19 @@ if gdf is not None:
     with col1:
         st.metric("Number of Features", len(gdf))
     with col2:
-        if len(gdf) > 0:
-            geometry_type_metric = gdf.geometry.type.value_counts().index[0]
+        if len(gdf) > 0 and not gdf.geometry.empty:
+            try:
+                geometry_type_metric = gdf.geometry.type.value_counts().index[0]
+            except (IndexError, KeyError):
+                geometry_type_metric = "N/A"
         else:
             geometry_type_metric = "N/A"
         st.metric("Geometry Type", geometry_type_metric)
     with col3:
         if gdf.crs:
             epsg = gdf.crs.to_epsg()
-            st.metric("CRS", f"EPSG:{epsg}" if epsg else str(gdf.crs))
+            crs_display = f"EPSG:{epsg}" if epsg else "Custom CRS"
+            st.metric("CRS", crs_display)
         else:
             st.metric("CRS", "Unknown")
 
