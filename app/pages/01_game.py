@@ -513,7 +513,9 @@ else:  # map_capital_mc
     )
     view_state = pdk.ViewState(latitude=lat, longitude=lon, zoom=7, pitch=0)
     deck = pdk.Deck(
-        layers=[layer], initial_view_state=view_state, tooltip={"text": "{name}"}  # type: ignore
+        layers=[layer],
+        initial_view_state=view_state,
+        tooltip={"text": "{name}"},  # type: ignore
     )
     st.pydeck_chart(deck)
     # 選択肢は都道府県名（pref）を混ぜる（ランダム生成）
