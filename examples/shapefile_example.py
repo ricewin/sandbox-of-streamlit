@@ -8,6 +8,10 @@ This script demonstrates the basic approach to visualizing shapefiles with PyDec
 import geopandas as gpd
 import pydeck as pdk
 
+# Default styling constants
+DEFAULT_FILL_COLOR = [255, 235, 215]  # Light orange
+DEFAULT_LINE_COLOR = [255, 250, 205]  # Light yellow
+
 
 def shapefile_to_pydeck(shapefile_path, output_html="map.html"):
     """
@@ -68,8 +72,8 @@ def shapefile_to_pydeck(shapefile_path, output_html="map.html"):
         filled=True,
         extruded=False,
         wireframe=True,
-        get_fill_color=[255, 235, 215],  # Light orange
-        get_line_color=[255, 250, 205],   # Light yellow
+        get_fill_color=DEFAULT_FILL_COLOR,
+        get_line_color=DEFAULT_LINE_COLOR,
         get_line_width=20,
         pickable=True,
     )
@@ -111,13 +115,8 @@ def geojson_to_pydeck(geojson_path, output_html="map.html"):
         pydeck.Deck: PyDeck map object
     """
     
-    # GeoJSON も GeoPandas で読み込めます
-    # GeoJSON can also be loaded with GeoPandas
-    print(f"Loading GeoJSON: {geojson_path}")
-    gdf = gpd.read_file(geojson_path)
-    
-    # 後の処理は shapefile_to_pydeck と同じ
-    # The rest is the same as shapefile_to_pydeck
+    # GeoJSON も GeoPandas で読み込み、shapefileと同じ処理を使用
+    # Load GeoJSON with GeoPandas and use the same processing as shapefile
     return shapefile_to_pydeck(geojson_path, output_html)
 
 

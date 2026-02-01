@@ -13,6 +13,9 @@ from io import BytesIO
 
 st.set_page_config(page_title="Shapefile Visualization", page_icon="🗾", layout="wide")
 
+# Constants
+MAX_TOOLTIP_PROPERTIES = 5  # Maximum number of properties to show in tooltip
+
 
 @st.cache_data
 def load_shapefile_from_upload(uploaded_files):
@@ -205,10 +208,10 @@ def create_pydeck_map(gdf, fill_color=[255, 235, 215], line_color=[255, 250, 205
         pickable=True,
     )
     
-    # Create tooltip - show all properties
+    # Create tooltip - show all properties (limited to MAX_TOOLTIP_PROPERTIES)
     tooltip = {
         "html": "<b>Properties:</b><br/>" + 
-                "<br/>".join([f"{{{key}}}" for key in gdf.columns if key != 'geometry'][:5]),
+                "<br/>".join([f"{{{key}}}" for key in gdf.columns if key != 'geometry'][:MAX_TOOLTIP_PROPERTIES]),
         "style": {
             "backgroundColor": "steelblue",
             "color": "white",
