@@ -117,7 +117,6 @@ def make_map(DATA, zoom: int = 4, level: int = 1):
 
 @st.fragment
 def choose_map(r):
-
     event = st.pydeck_chart(r, height=800, on_select="rerun")
 
     with st.expander("*Detailed information on the selected region.*"):
