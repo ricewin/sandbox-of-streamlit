@@ -346,7 +346,7 @@ if gdf is not None:
 
     # Display attribute table
     with st.expander("View Attribute Table"):
-        st.dataframe(gdf.drop(columns=["geometry"]), use_container_width=True)
+        st.dataframe(gdf.drop(columns=["geometry"]))
 
     # Display GeoJSON
     with st.expander("View GeoJSON Format"):
