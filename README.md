@@ -10,6 +10,35 @@ Getting started: [30 Days of Streamlit.](https://30days.streamlit.app/)
 - ⚡️ Using ruff as the linter and code formatter.
 - 🗾 **NEW**: Shapefile visualization with PyDeck - [Documentation](docs/SHAPEFILE_VISUALIZATION.md)
 
+## Getting Started
+
+### Prerequisites
+
+- Python 3.14 or higher
+- uv package manager
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/ricewin/sandbox-of-streamlit.git
+   cd sandbox-of-streamlit
+   ```
+
+2. Install dependencies using uv:
+   ```bash
+   uv sync
+   ```
+
+3. Run the Streamlit app:
+   ```bash
+   ./run_app.sh
+   ```
+   Or manually:
+   ```bash
+   streamlit run app/main.py
+   ```
+
 ## Features
 
 ### Shapefile Visualization (NEW)
