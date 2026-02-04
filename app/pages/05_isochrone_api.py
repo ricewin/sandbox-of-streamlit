@@ -12,10 +12,11 @@ def fetch_isochrone(lat, lon, routing_profile, minutes):
     """Mapbox Isochrone API からデータを取得（キャッシュ済み）"""
     url = (
         f"https://api.mapbox.com/isochrone/v1/mapbox/{routing_profile}/"
-        f"{lon},{lat}?contours_minutes={minutes}&polygons=true&access_token={MAPBOX_TOKEN}"
+        f"{lon},{lat}?contours_minutes={minutes}&polygons=true"
     )
+    headers = {"Authorization": f"Bearer {MAPBOX_TOKEN}"}
     try:
-        res = requests.get(url, timeout=10)
+        res = requests.get(url, headers=headers, timeout=10)
         res.raise_for_status()
         return res.json()
     except requests.exceptions.RequestException as e:
