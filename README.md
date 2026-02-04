@@ -41,7 +41,7 @@ Getting started: [30 Days of Streamlit.](https://30days.streamlit.app/)
    Or manually:
 
    ```bash
-   streamlit run app/main.py
+   uv run streamlit run app/main.py
    ```
 
 ## Features
