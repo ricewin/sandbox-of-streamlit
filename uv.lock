@@ -850,6 +850,7 @@ dependencies = [
     { name = "geopandas" },
     { name = "maplibre", extra = ["shiny"] },
     { name = "pydeck" },
+    { name = "requests" },
     { name = "streamlit" },
 ]
 
@@ -864,6 +865,7 @@ requires-dist = [
     { name = "geopandas", specifier = ">=1.0.1" },
     { name = "maplibre", extras = ["shiny"], specifier = ">=0.3.6" },
     { name = "pydeck", specifier = ">=0.9.1" },
+    { name = "requests", specifier = ">=2.0.0" },
     { name = "streamlit", specifier = ">=1.52.2" },
 ]
 
