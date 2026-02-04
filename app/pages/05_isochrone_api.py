@@ -6,6 +6,18 @@ st.title("🔮 Mapbox Isochrone Demo")
 
 MAPBOX_TOKEN = st.secrets.mapbox.token
 
+
+@st.cache_data
+def fetch_isochrone(lat, lon, routing_profile, minutes):
+    """Mapbox Isochrone API からデータを取得（キャッシュ済み）"""
+    url = (
+        f"https://api.mapbox.com/isochrone/v1/mapbox/{routing_profile}/"
+        f"{lon},{lat}?contours_minutes={minutes}&polygons=true&access_token={MAPBOX_TOKEN}"
+    )
+    res = requests.get(url)
+    return res.json()
+
+
 # 入力 UI
 lat = st.number_input("Latitude", value=35.681236)
 lon = st.number_input("Longitude", value=139.767125)
@@ -16,14 +28,8 @@ routing_profile = st.selectbox(
 )
 minutes = st.slider("Travel time (minutes)", 1, 60, 10)
 
-# API 呼び出し
-url = (
-    f"https://api.mapbox.com/isochrone/v1/mapbox/{routing_profile}/"
-    f"{lon},{lat}?contours_minutes={minutes}&polygons=true&access_token={MAPBOX_TOKEN}"
-)
-
-res = requests.get(url)
-geojson = res.json()
+# API 呼び出し（キャッシュあり）
+geojson = fetch_isochrone(lat, lon, routing_profile, minutes)
 
 # pydeck レイヤー
 layer = pdk.Layer(
