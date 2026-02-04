@@ -48,7 +48,7 @@ https://*.yourdomain.com/*
 
 Use tokens with minimal required scopes:
 
-- ✅ For this demo, you only need: `styles:read`, `fonts:read`, and the Isochrone API scope
+- ✅ For this demo, you only need: `styles:read`, `fonts:read`, and the `Isochrone API` scope (under **APIs** in your Mapbox token settings)
 - ❌ Avoid using tokens with write permissions or sensitive data access
 
 #### Token Types
