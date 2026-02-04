@@ -20,21 +20,26 @@ Getting started: [30 Days of Streamlit.](https://30days.streamlit.app/)
 ### Installation
 
 1. Clone the repository:
+
    ```bash
    git clone https://github.com/ricewin/sandbox-of-streamlit.git
    cd sandbox-of-streamlit
    ```
 
 2. Install dependencies using uv:
+
    ```bash
    uv sync
    ```
 
 3. Run the Streamlit app:
+
    ```bash
    ./run_app.sh
    ```
+
    Or manually:
+
    ```bash
    streamlit run app/main.py
    ```
@@ -48,6 +53,7 @@ Interactive visualization of geographic data using PyDeck's GeoJsonLayer. Suppor
 **Page**: `app/pages/04_shapefile_pydeck.py`
 
 **Key Features**:
+
 - ✅ Upload and visualize Shapefiles (.shp + .shx + .dbf + .prj)
 - ✅ Upload and visualize GeoJSON files (.geojson, .json)
 - ✅ Sample data demo with Natural Earth Countries
