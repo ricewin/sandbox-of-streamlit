@@ -14,8 +14,14 @@ def fetch_isochrone(lat, lon, routing_profile, minutes):
         f"https://api.mapbox.com/isochrone/v1/mapbox/{routing_profile}/"
         f"{lon},{lat}?contours_minutes={minutes}&polygons=true&access_token={MAPBOX_TOKEN}"
     )
-    res = requests.get(url)
-    return res.json()
+    try:
+        res = requests.get(url, timeout=10)
+        res.raise_for_status()
+        return res.json()
+    except requests.exceptions.RequestException as e:
+        st.error(f"Failed to fetch isochrone data from Mapbox: {e}")
+        # 安全なフォールバック値を返す（空の GeoJSON）
+        return {}
 
 
 # 入力 UI
