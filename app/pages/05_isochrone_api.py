@@ -21,8 +21,8 @@ def fetch_isochrone(lat, lon, routing_profile, minutes):
         return res.json()
     except requests.exceptions.RequestException as e:
         st.error(f"Failed to fetch isochrone data from Mapbox: {e}")
-        # 安全なフォールバック値を返す（空の GeoJSON）
-        return {}
+        # 安全なフォールバック値を返す（空の GeoJSON FeatureCollection）
+        return {"type": "FeatureCollection", "features": []}
 
 
 # 入力 UI
