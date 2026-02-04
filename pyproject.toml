@@ -10,3 +10,9 @@ dependencies = [
     "pydeck>=0.9.1",
     "streamlit>=1.52.2",
 ]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "ruff>=0.15.0",
+]
