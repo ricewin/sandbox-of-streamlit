@@ -4,28 +4,37 @@ import streamlit as st
 
 st.title("🔮 Mapbox Isochrone Demo")
 
-MAPBOX_TOKEN = st.secrets.mapbox.token
+if "mapbox_validated" not in st.session_state:
+    from common.secrets import require_mapbox_token
+
+    require_mapbox_token()
+    st.session_state.mapbox_validated = True
 
 
 @st.cache_data
 def fetch_isochrone(lat, lon, routing_profile, minutes):
-    """Mapbox Isochrone API からデータを取得（キャッシュ済み）"""
-    url = (
-        f"https://api.mapbox.com/isochrone/v1/mapbox/{routing_profile}/"
-        f"{lon},{lat}?contours_minutes={minutes}&polygons=true"
+    """Fetch isochrone data from Mapbox API (with caching)"""
+    base_url = (
+        f"https://api.mapbox.com/isochrone/v1/mapbox/{routing_profile}/{lon},{lat}"
     )
-    headers = {"Authorization": f"Bearer {MAPBOX_TOKEN}"}
+
+    params = {
+        "contours_minutes": minutes,
+        "polygons": "true",
+        "access_token": st.secrets.mapbox.token,
+    }
+
     try:
-        res = requests.get(url, headers=headers, timeout=10)
+        res = requests.get(base_url, params=params, timeout=10)
         res.raise_for_status()
         return res.json()
     except requests.exceptions.RequestException as e:
         st.error(f"Failed to fetch isochrone data from Mapbox: {e}")
-        # 安全なフォールバック値を返す（空の GeoJSON FeatureCollection）
+        # Return safe fallback value (empty GeoJSON)
         return {"type": "FeatureCollection", "features": []}
 
 
-# 入力 UI
+# Input UI
 lat = st.number_input("Latitude", value=35.681236)
 lon = st.number_input("Longitude", value=139.767125)
 routing_profile = st.selectbox(
@@ -35,10 +44,10 @@ routing_profile = st.selectbox(
 )
 minutes = st.slider("Travel time (minutes)", 1, 60, 10)
 
-# API 呼び出し（キャッシュあり）
+# API call (with caching)
 geojson = fetch_isochrone(lat, lon, routing_profile, minutes)
 
-# pydeck レイヤー
+# PyDeck layer
 layer = pdk.Layer(
     "GeoJsonLayer",
     geojson,
@@ -59,7 +68,7 @@ st.pydeck_chart(
     pdk.Deck(
         layers=[layer],
         initial_view_state=view_state,
-        api_keys={"mapbox": MAPBOX_TOKEN},
+        api_keys={"mapbox": st.secrets.mapbox.token},
         map_provider="mapbox",
     )
 )
