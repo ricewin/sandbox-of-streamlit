@@ -51,6 +51,10 @@ layer = pdk.Layer(
 
 view_state = pdk.ViewState(latitude=lat, longitude=lon, zoom=12)
 
+# Note: Passing the Mapbox token via api_keys is the standard approach documented by Streamlit.
+# See: https://docs.streamlit.io/develop/api-reference/charts/st.pydeck_chart
+# Mapbox tokens are designed for client-side use. For security, configure URL restrictions
+# and appropriate scopes in your Mapbox account settings: https://account.mapbox.com/
 st.pydeck_chart(
     pdk.Deck(
         layers=[layer],
