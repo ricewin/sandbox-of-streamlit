@@ -2,6 +2,15 @@
   "editor.formatOnSave": true,
   "files.autoSaveWhenNoErrors": true,
   "cSpell.words": [
-    "dasharray"
+    "dasharray",
+    "geodataframe",
+    "Isochrone",
+    "maxx",
+    "maxy",
+    "miny",
+    "reprojected",
+    "shapefiles",
+    "steelblue",
+    "uploaders"
   ],
 }
