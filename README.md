@@ -8,7 +8,7 @@ Getting started: [30 Days of Streamlit.](https://30days.streamlit.app/)
 
 - 🚀 Using uv as the package management tool.
 - ⚡️ Using ruff as the linter and code formatter.
-- 🔮 **NEW**: Mapbox Isochrone API demo with PyDeck - [Documentation](docs/MAPBOX_ISOCHRONE.md)
+- 🗺️ **NEW**: Mapbox Isochrone API demo with PyDeck - [Documentation](docs/MAPBOX_ISOCHRONE.md)
 - 🗾 Shapefile visualization with PyDeck - [Documentation](docs/SHAPEFILE_VISUALIZATION.md)
 
 ## Getting Started
