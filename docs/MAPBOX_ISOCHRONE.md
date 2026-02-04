@@ -34,10 +34,10 @@ token = "pk.your_mapbox_token_here"
 
 Configure URL restrictions in your [Mapbox account settings](https://account.mapbox.com/):
 
-- **Development**: Restrict to `localhost` and your development domains
-- **Production**: Restrict to your production domain(s) only
+- **Development**: Restrict to `localhost` and/or your non-production development domains
+- **Production**: Restrict to your public production domain(s) only
   
-Example URL restrictions:
+Example URL restrictions (adapt these to match each environment):
 ```
 http://localhost:*
 https://yourdomain.com/*
