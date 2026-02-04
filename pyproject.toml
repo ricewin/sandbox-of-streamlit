@@ -9,4 +9,11 @@ dependencies = [
     "maplibre[shiny]>=0.3.6",
     "pydeck>=0.9.1",
     "streamlit>=1.52.2",
+    "requests>=2.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "ruff>=0.15.0",
 ]
