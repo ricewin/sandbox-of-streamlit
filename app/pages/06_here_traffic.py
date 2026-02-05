@@ -130,9 +130,9 @@ def fetch_traffic_incidents(api_key, lat, lon, radius=5000):
                             "geometry": {"type": "LineString", "coordinates": coordinates},
                             "properties": {
                                 "type": incident_type,
-                                "description": incident.get("incidentDetails", {}).get(
-                                    "description", {"value": ""}
-                                )["value"],
+                                "description": incident.get("incidentDetails", {})
+                                .get("description", {})
+                                .get("value", ""),
                                 "criticality": criticality.get("description", "Unknown"),
                             },
                         }
@@ -166,8 +166,8 @@ if not st.session_state.here_api_key:
                     ],
                 },
                 "properties": {
-                    "type": "渋滞",
-                    "description": "首都高速道路で渋滞が発生しています",
+                    "type": "CONGESTION",
+                    "description": "首都高速道路で渋滞が発生しています (Traffic congestion on the expressway)",
                     "criticality": "Major",
                     "speed": 15,
                 },
@@ -183,8 +183,8 @@ if not st.session_state.here_api_key:
                     ],
                 },
                 "properties": {
-                    "type": "工事",
-                    "description": "道路工事のため車線規制中",
+                    "type": "CONSTRUCTION",
+                    "description": "道路工事のため車線規制中 (Road construction with lane restrictions)",
                     "criticality": "Minor",
                     "speed": 30,
                 },
