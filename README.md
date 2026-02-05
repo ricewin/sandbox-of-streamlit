@@ -8,7 +8,8 @@ Getting started: [30 Days of Streamlit.](https://30days.streamlit.app/)
 
 - 🚀 Using uv as the package management tool.
 - ⚡️ Using ruff as the linter and code formatter.
-- 🗺️ **NEW**: Mapbox Isochrone API demo with PyDeck - [Documentation](docs/MAPBOX_ISOCHRONE.md)
+- 🚦 **NEW**: HERE Traffic API with MapLibre - [Documentation](docs/HERE_TRAFFIC_API.md)
+- 🗺️ Mapbox Isochrone API demo with PyDeck - [Documentation](docs/MAPBOX_ISOCHRONE.md)
 - 🗾 Shapefile visualization with PyDeck - [Documentation](docs/SHAPEFILE_VISUALIZATION.md)
 
 ## Getting Started
@@ -47,7 +48,25 @@ Getting started: [30 Days of Streamlit.](https://30days.streamlit.app/)
 
 ## Features
 
-### Mapbox Isochrone API Demo (NEW)
+### HERE Traffic API with MapLibre (NEW)
+
+Real-time traffic visualization combining HERE Traffic API and MapLibre. Display traffic incidents, congestion, and road conditions on an interactive map.
+
+**Page**: `app/pages/06_here_traffic.py`
+
+**Key Features**:
+
+- 🚦 Real-time traffic incident data from HERE Traffic API
+- 🗺️ Interactive MapLibre map visualization
+- 🎨 Color-coded incident severity (Critical/Major/Minor)
+- 📍 Multiple sample locations (Tokyo, Osaka, etc.)
+- 💾 API response caching (5-minute TTL)
+- 🎮 Demo mode with sample data (works without API key)
+- 🔒 Secure API key management
+
+See [HERE_TRAFFIC_API.md](docs/HERE_TRAFFIC_API.md) for detailed tutorial and implementation guide.
+
+### Mapbox Isochrone API Demo
 
 Interactive visualization of travel time polygons using the Mapbox Isochrone API. Shows areas reachable within specified time intervals from any location.
 
