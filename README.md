@@ -50,15 +50,16 @@ Getting started: [30 Days of Streamlit.](https://30days.streamlit.app/)
 
 ### HERE Traffic API with MapLibre (NEW)
 
-Real-time traffic visualization combining HERE Traffic API and MapLibre. Display traffic incidents, congestion, and road conditions on an interactive map.
+Real-time traffic flow visualization combining HERE Traffic Flow API and MapLibre. Display traffic congestion levels, speeds, and road conditions on an interactive map.
 
 **Page**: `app/pages/06_here_traffic.py`
 
 **Key Features**:
 
-- 🚦 Real-time traffic incident data from HERE Traffic API
+- 🚦 Real-time traffic flow data from HERE Traffic Flow API
 - 🗺️ Interactive MapLibre map visualization
-- 🎨 Color-coded incident severity (Critical/Major/Minor)
+- 🎨 Color-coded congestion levels based on jamFactor (Red: heavy, Yellow: moderate, Green: light)
+- 📊 Speed metrics (current speed, free flow speed, jam factor)
 - 📍 Multiple sample locations (Tokyo, Osaka, etc.)
 - 💾 API response caching (5-minute TTL)
 - 🎮 Demo mode with sample data (works without API key)

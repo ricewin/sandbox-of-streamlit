@@ -39,18 +39,6 @@ def get_functional_class_name(functional_class):
     return mapping.get(functional_class, "その他")
 
 
-def get_jam_factor_color(jam_factor):
-    """渋滞係数に基づいて色を返す"""
-    if jam_factor is None:
-        return "#00aa00"  # 緑（通常）
-    if jam_factor <= 2.0:
-        return "#00aa00"  # 緑（軽い）
-    elif jam_factor <= 6.0:
-        return "#ffaa00"  # 黄色（中程度）
-    else:
-        return "#ff0000"  # 赤（重大）
-
-
 st.title("🚦 HERE Traffic API × MapLibre デモ")
 
 st.markdown(
@@ -60,7 +48,6 @@ st.markdown(
 
 ### 機能
 - 🚗 **交通流量 (Traffic Flow)**: 道路の混雑状況を色で表示
-- 🚧 **交通インシデント (Traffic Incidents)**: 事故や工事などの情報を表示
 """
 )
 
@@ -144,11 +131,6 @@ def fetch_traffic_flow(api_key, lat, lon, radius=5000):
         res.raise_for_status()
         data = res.json()
 
-        # デバッグ用：レスポンスの一部を表示
-        with st.expander("🔍 API レスポンス（デバッグ用）", expanded=False):
-            st.caption("取得した交通流量データの一部を表示します")
-            st.json(data.get("results", [])[:2])  # 最初の2件のみ表示
-
         # GeoJSON形式に変換
         features = []
         if "results" in data:
@@ -226,8 +208,12 @@ def fetch_traffic_flow(api_key, lat, lon, radius=5000):
         return {"type": "FeatureCollection", "features": features}
 
     except requests.exceptions.RequestException as e:
-        st.error(f"交通情報の取得に失敗しました: {e}")
-        return {"type": "FeatureCollection", "features": []}
+        # エラーは返り値で呼び出し元に伝え、キャッシュ外で表示を行う
+        return {
+            "type": "FeatureCollection",
+            "features": [],
+            "error": f"交通情報の取得に失敗しました: {e}",
+        }
 
 
 # デモモード：APIキーがない場合はサンプルデータを表示
@@ -252,7 +238,7 @@ if not st.session_state.here_api_key:
                 },
                 "properties": {
                     "speed": 50.0,
-                    "freeFlow": 100,
+                    "freeFlow": 100.0,
                     "speedUncapped": 120.0,
                     "speedPercentage": 83.3,
                     "jamFactor": 7.5,
@@ -325,6 +311,15 @@ else:
     # 実際のAPIから取得
     with st.spinner("交通情報を取得中..."):
         traffic_geojson = fetch_traffic_flow(st.session_state.here_api_key, lat, lon)
+    
+    # エラーハンドリング（キャッシュの外）
+    if "error" in traffic_geojson:
+        st.error(traffic_geojson["error"])
+    
+    # デバッグ用：レスポンスの一部を表示（キャッシュの外）
+    if traffic_geojson["features"]:
+        with st.expander("🔍 取得データ数", expanded=False):
+            st.caption(f"取得した交通流量データ: {len(traffic_geojson['features'])} 件")
 
 # MapLibreで地図を作成
 st.subheader("🗺️ 交通情報マップ")
@@ -339,7 +334,7 @@ map_options = MapOptions(
 m = Map(map_options)
 m.add_control(NavigationControl())  # pyright: ignore[reportCallIssue]
 
-# 交通インシデントレイヤーを追加
+# 交通流量レイヤーを追加
 if traffic_geojson["features"]:
     traffic_source = GeoJSONSource(data=traffic_geojson)  # pyright: ignore[reportCallIssue]
 
@@ -459,19 +454,20 @@ st.markdown(
     - 緯度・経度を直接入力してカスタム地点を表示
 
 3. **交通情報の確認**
-    - 地図上の色付きラインが交通インシデントを示します
-    - **赤**: 重大な渋滞・事故
-    - **オレンジ**: 中程度の渋滞
-    - **黄色**: 軽度の影響
-    - 各インシデントの詳細は下部のリストで確認できます
+    - 地図上の色付きラインが交通流量（渋滞状況）を示します
+    - **赤**: 重大な渋滞（渋滞係数 > 6.0）
+    - **黄**: 中程度の渋滞（渋滞係数 2.0 - 6.0）
+    - **緑**: 通常の流れ（渋滞係数 < 2.0）
+    - 各道路セグメントの詳細は下部のリストで確認できます
 
 ### 🎓 学習ポイント
 
-- **HERE Traffic API**: リアルタイムの交通情報を提供する強力なAPI
+- **HERE Traffic Flow API**: リアルタイムの交通流量情報を提供する強力なAPI
   - **速度の単位**: API レスポンスはメートル/秒（m/s）で返却され、表示用に km/h に変換
   - **speed**: 現在の道路速度（m/s）
   - **freeFlow**: 交通量がない時の基準速度（m/s）
   - **speedUncapped**: 法定速度制限を超える場合がある予想速度（m/s）
+  - **jamFactor**: 渋滞係数（0-10、値が大きいほど渋滞）
 - **MapLibre**: オープンソースの地図ライブラリで、カスタマイズ性が高い
 - **GeoJSON**: 地理情報を標準化された形式で扱う
 - **Streamlit Caching**: APIレスポンスをキャッシュしてパフォーマンス向上

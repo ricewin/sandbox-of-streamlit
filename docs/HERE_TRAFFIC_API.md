@@ -1,14 +1,14 @@
-# HERE Traffic API × MapLibre チュートリアル
+# HERE Traffic Flow API × MapLibre チュートリアル
 
-このチュートリアルでは、HERE Traffic APIとMapLibreを組み合わせて、リアルタイムの交通情報を地図上に可視化する方法を学びます。
+このチュートリアルでは、HERE Traffic Flow APIとMapLibreを組み合わせて、リアルタイムの交通流量情報を地図上に可視化する方法を学びます。
 
 ## 🎯 チュートリアルの目的
 
-交通情報APIと地図ライブラリを統合して、実用的な交通可視化アプリケーションを作成します。
+交通流量APIと地図ライブラリを統合して、実用的な交通可視化アプリケーションを作成します。
 
 ### 学習内容
 
-- HERE Traffic APIの基本的な使い方
+- HERE Traffic Flow APIの基本的な使い方
 - MapLibreでのGeoJSONデータの表示
 - Streamlitでのインタラクティブな地図アプリケーション作成
 - APIレスポンスのキャッシング戦略
@@ -51,19 +51,19 @@ api_key = "your_here_api_key_here"
 
 ### 実装される機能
 
-1. **交通インシデントの取得**
-   - HERE Traffic APIを使用してリアルタイムデータを取得
-   - 事故、渋滞、工事などの情報を収集
+1. **交通流量の取得**
+   - HERE Traffic Flow APIを使用してリアルタイムデータを取得
+   - 道路速度、渋滞係数、自由流速度などの情報を収集
 
 2. **地図上での可視化**
    - MapLibreを使用してインタラクティブな地図を表示
-   - 重要度に応じた色分け表示
+   - 渋滞係数に応じた色分け表示（赤: 重大、黄: 中程度、緑: 軽い）
    - カスタマイズ可能なスタイル
 
 3. **インタラクティブUI**
    - 地点選択機能（サンプル地点 + カスタム座標）
    - リアルタイム情報更新
-   - インシデント詳細の表示
+   - 道路セグメント詳細の表示
 
 4. **パフォーマンス最適化**
    - APIレスポンスのキャッシング（5分間）
@@ -72,13 +72,13 @@ api_key = "your_here_api_key_here"
 
 ## 📝 コードの主要部分
 
-### HERE Traffic API統合
+### HERE Traffic Flow API統合
 
 ```python
 @st.cache_data(ttl=300)  # 5分間キャッシュ
-def fetch_traffic_incidents(api_key, lat, lon, radius=5000):
-    """HERE Traffic APIから交通インシデント情報を取得"""
-    base_url = "https://data.traffic.hereapi.com/v7/incidents"
+def fetch_traffic_flow(api_key, lat, lon, radius=5000):
+    """HERE Traffic Flow APIから交通流量情報を取得"""
+    base_url = "https://data.traffic.hereapi.com/v7/flow"
     
     params = {
         "apiKey": api_key,
@@ -94,6 +94,7 @@ def fetch_traffic_incidents(api_key, lat, lon, radius=5000):
 - `@st.cache_data(ttl=300)`: APIコールを5分間キャッシュしてパフォーマンス向上
 - `locationReferencing="shape"`: 道路の形状情報を取得
 - `in` パラメータ: 検索範囲を指定（円形、半径5km）
+- **エンドポイント**: `/v7/flow` を使用（交通流量データ）
 
 ### MapLibreでの表示
 
@@ -108,18 +109,19 @@ map_options = MapOptions(
 m = Map(map_options)
 m.add_control(NavigationControl())
 
-# 交通インシデントレイヤー
+# 交通流量レイヤー（渋滞係数に基づく色分け）
 traffic_layer = Layer(
     type=LayerType.LINE,
     source=traffic_source,
     paint={
         "line-color": [
-            "match",
-            ["get", "criticality"],
-            "Critical", "#ff0000",  # 赤: 重大
-            "Major", "#ff6600",      # オレンジ: 中
-            "Minor", "#ffaa00",      # 黄色: 軽度
-            "#00aa00",               # 緑: デフォルト
+            "step",
+            ["get", "jamFactor"],
+            "#00aa00",  # 緑: jamFactor < 2.0 (軽い)
+            2.0,
+            "#ffaa00",  # 黄: 2.0 <= jamFactor < 6.0 (中程度)
+            6.0,
+            "#ff0000",  # 赤: jamFactor >= 6.0 (重大)
         ],
         "line-width": 6,
         "line-opacity": 0.8,
@@ -128,7 +130,8 @@ traffic_layer = Layer(
 ```
 
 **ポイント**:
-- データ駆動スタイリング: `criticality`プロパティに基づいて色を変更
+- データ駆動スタイリング: `jamFactor`プロパティに基づいて色を変更
+- `step` 式: 渋滞係数の閾値で段階的に色を変更
 - LineStringジオメトリで道路セグメントを表示
 - 透明度を調整して地図の視認性を維持
 
@@ -140,7 +143,7 @@ traffic_layer = Layer(
 ```python
 # HERE Routing APIと組み合わせ
 route = get_route(origin, destination, avoid_traffic=True)
-traffic_on_route = filter_incidents_on_route(route, incidents)
+traffic_on_route = filter_flows_on_route(route, traffic_flows)
 ```
 
 ### 2. 時系列分析
@@ -152,9 +155,9 @@ plot_congestion_patterns(traffic_history)
 
 ### 3. アラート機能
 ```python
-# 重大なインシデントを検出したら通知
-if any(incident['criticality'] == 'Critical' for incident in incidents):
-    st.warning("⚠️ 重大な交通インシデントが検出されました！")
+# 重大な渋滞を検出したら通知
+if any(flow['jamFactor'] > 8.0 for flow in traffic_flows):
+    st.warning("⚠️ 重大な渋滞が検出されました！")
 ```
 
 ### 4. 複数地点の比較
@@ -166,23 +169,12 @@ traffic_comparison = compare_traffic_across_locations(locations)
 
 ## 📊 データ形式
 
-### HERE Traffic API レスポンス構造
+### HERE Traffic Flow API レスポンス構造
 
 ```json
 {
   "results": [
     {
-      "incidentDetails": {
-        "type": {
-          "description": "ACCIDENT"
-        },
-        "criticality": {
-          "description": "Major"
-        },
-        "description": {
-          "value": "事故による通行止め"
-        }
-      },
       "location": {
         "shape": {
           "links": [
@@ -190,15 +182,27 @@ traffic_comparison = compare_traffic_across_locations(locations)
               "points": [
                 {"lat": 35.681, "lng": 139.767},
                 {"lat": 35.682, "lng": 139.768}
-              ]
+              ],
+              "functionalClass": 1
             }
           ]
-        }
+        },
+        "length": 1850
+      },
+      "currentFlow": {
+        "speed": 13.9,
+        "speedUncapped": 33.3,
+        "freeFlow": 27.8,
+        "jamFactor": 7.5,
+        "confidence": 0.9,
+        "traversability": "open"
       }
     }
   ]
 }
 ```
+
+**重要**: APIは速度をメートル/秒 (m/s) で返します。表示時には km/h に変換します。
 
 ### GeoJSON変換後
 
@@ -213,9 +217,16 @@ traffic_comparison = compare_traffic_across_locations(locations)
         "coordinates": [[139.767, 35.681], [139.768, 35.682]]
       },
       "properties": {
-        "type": "ACCIDENT",
-        "criticality": "Major",
-        "description": "事故による通行止め"
+        "speed": 50.0,
+        "freeFlow": 100.0,
+        "speedUncapped": 120.0,
+        "speedPercentage": 50.0,
+        "jamFactor": 7.5,
+        "congestionLevel": "重大",
+        "confidence": 0.9,
+        "functionalClass": 1,
+        "functionalClassName": "高速道路",
+        "length": 1850
       }
     }
   ]
@@ -241,8 +252,9 @@ traffic_comparison = compare_traffic_across_locations(locations)
 
 ### HERE Platform
 - [HERE Traffic API Documentation](https://developer.here.com/documentation/traffic-api/dev_guide/index.html)
+- [HERE Traffic Flow API Reference](https://developer.here.com/documentation/traffic-api/dev_guide/topics/resource-type-flow.html)
 - [HERE Developer Portal](https://developer.here.com/)
-- [HERE API Playground](https://developer.here.com/documentation/examples/rest/traffic/traffic-incidents)
+- [HERE API Playground](https://developer.here.com/documentation/examples/rest/traffic/traffic-flow)
 
 ### MapLibre
 - [MapLibre GL JS Documentation](https://maplibre.org/maplibre-gl-js-docs/api/)
@@ -269,7 +281,12 @@ traffic_comparison = compare_traffic_across_locations(locations)
 ### パフォーマンスが遅い
 - キャッシュのTTL（Time To Live）を調整
 - 検索半径を小さくする
-- 表示するインシデント数を制限
+- 表示する道路セグメント数を制限
+
+### データが表示されない
+- 選択した地域に交通流量データがあるか確認
+- APIレスポンスが正しく変換されているか確認
+- デモモードで動作確認してから実際のAPIを試す
 
 ## 📈 次のステップ
 
@@ -279,15 +296,16 @@ traffic_comparison = compare_traffic_across_locations(locations)
 2. **HERE Weather API**を統合して、気象条件と交通の相関を分析
 3. **リアルタイム更新機能**を実装（Streamlitの自動更新機能を使用）
 4. **交通予測モデル**を構築（過去データを使用）
-5. **モバイル対応**のレスポンシブデザイン
+5. **HERE Incidents API**を追加して、事故や工事情報も同時に表示
+6. **モバイル対応**のレスポンシブデザイン
 
 ## 🎓 まとめ
 
 このチュートリアルでは：
-- ✅ HERE Traffic APIの基本的な使用方法を学習
+- ✅ HERE Traffic Flow APIの基本的な使用方法を学習
 - ✅ MapLibreでのデータ可視化技術を習得
 - ✅ Streamlitでのインタラクティブアプリケーション開発
 - ✅ APIキャッシングとパフォーマンス最適化
 - ✅ セキュリティのベストプラクティス
 
-これらの知識を基に、より高度な交通情報アプリケーションを開発できます！
+これらの知識を基に、より高度な交通流量可視化アプリケーションを開発できます！
