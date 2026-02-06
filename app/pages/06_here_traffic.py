@@ -7,6 +7,50 @@ from maplibre.map import Map, MapOptions
 from maplibre.sources import GeoJSONSource
 from maplibre.streamlit import st_maplibre
 
+
+def calculate_speed_percentage(speed, free_flow):
+    """現在速度の自由流速度に対するパーセンテージを計算"""
+    if free_flow and free_flow > 0:
+        return (speed / free_flow) * 100
+    return 100.0
+
+
+def evaluate_jam_factor(jam_factor):
+    """渋滞係数を評価レベルに変換"""
+    if jam_factor is None:
+        return "不明"
+    if jam_factor <= 2.0:
+        return "軽い"
+    elif jam_factor <= 6.0:
+        return "中程度"
+    else:
+        return "重大"
+
+
+def get_functional_class_name(functional_class):
+    """道路等級IDを日本語名に変換"""
+    mapping = {
+        1: "高速道路",
+        2: "主要幹線道路",
+        3: "補助幹線道路",
+        4: "生活道路",
+        5: "住宅道路",
+    }
+    return mapping.get(functional_class, "その他")
+
+
+def get_jam_factor_color(jam_factor):
+    """渋滞係数に基づいて色を返す"""
+    if jam_factor is None:
+        return "#00aa00"  # 緑（通常）
+    if jam_factor <= 2.0:
+        return "#00aa00"  # 緑（軽い）
+    elif jam_factor <= 6.0:
+        return "#ffaa00"  # 黄色（中程度）
+    else:
+        return "#ff0000"  # 赤（重大）
+
+
 st.title("🚦 HERE Traffic API × MapLibre デモ")
 
 st.markdown(
@@ -29,7 +73,7 @@ with st.sidebar:
     st.markdown(
         """
     HERE APIキーは[HERE Developer Portal](https://developer.here.com/)で取得できます。
-    
+
     **無料プラン**で始められます：
     1. アカウント作成
     2. プロジェクト作成
@@ -53,24 +97,22 @@ with st.sidebar:
 # 地図の中心地点設定
 st.subheader("📍 表示地点の設定")
 
-col1, col2 = st.columns(2)
-with col1:
+with st.container(horizontal=True):
     lat = st.number_input("緯度 (Latitude)", value=35.681236, format="%.6f")
-with col2:
     lon = st.number_input("経度 (Longitude)", value=139.767125, format="%.6f")
 
-# サンプル地点ボタン
+# サンプル地点ボタン（交通量の多い主要都市）
 sample_locations = {
     "東京駅": (35.681236, 139.767125),
-    "新宿駅": (35.689487, 139.700675),
-    "渋谷駅": (35.658034, 139.701636),
-    "大阪駅": (34.702485, 135.495951),
+    "大阪梅田": (34.702485, 135.495951),
+    "名古屋駅": (35.170915, 136.881537),
+    "福岡天神": (33.590355, 130.401716),
+    "札幌駅": (43.068661, 141.350755),
 }
 
 st.write("**サンプル地点:**")
-cols = st.columns(len(sample_locations))
-for idx, (name, (sample_lat, sample_lon)) in enumerate(sample_locations.items()):
-    with cols[idx]:
+with st.container(horizontal=True):
+    for idx, (name, (sample_lat, sample_lon)) in enumerate(sample_locations.items()):
         if st.button(name, key=f"loc_{idx}"):
             st.session_state.sample_lat = sample_lat
             st.session_state.sample_lon = sample_lon
@@ -84,17 +126,17 @@ if "sample_lat" in st.session_state:
 
 
 @st.cache_data(ttl=300)  # 5分間キャッシュ
-def fetch_traffic_incidents(api_key, lat, lon, radius=5000):
-    """HERE Traffic APIから交通インシデント情報を取得"""
+def fetch_traffic_flow(api_key, lat, lon, radius=5000):
+    """HERE Traffic APIから交通流量情報を取得"""
     if not api_key:
         return {"type": "FeatureCollection", "features": []}
 
-    base_url = "https://data.traffic.hereapi.com/v7/incidents"
+    base_url = "https://data.traffic.hereapi.com/v7/flow"
 
     params = {
-        "apiKey": api_key,
         "in": f"circle:{lat},{lon};r={radius}",
         "locationReferencing": "shape",
+        "apiKey": api_key,
     }
 
     try:
@@ -102,41 +144,84 @@ def fetch_traffic_incidents(api_key, lat, lon, radius=5000):
         res.raise_for_status()
         data = res.json()
 
+        # デバッグ用：レスポンスの一部を表示
+        with st.expander("🔍 API レスポンス（デバッグ用）", expanded=False):
+            st.caption("取得した交通流量データの一部を表示します")
+            st.json(data.get("results", [])[:2])  # 最初の2件のみ表示
+
         # GeoJSON形式に変換
         features = []
         if "results" in data:
-            for incident in data["results"]:
-                if "location" in incident and "shape" in incident["location"]:
-                    coordinates = [
-                        [point["lng"], point["lat"]]
-                        for point in incident["location"]["shape"]["links"][0][
-                            "points"
+            for result in data["results"]:
+                current_flow = result.get("currentFlow", {})
+                location = result.get("location", {})
+
+                # 座標データの取得
+                if "shape" in location and "links" in location["shape"]:
+                    links = location["shape"]["links"]
+                    if links and "points" in links[0]:
+                        coordinates = [
+                            [point["lng"], point["lat"]] for point in links[0]["points"]
                         ]
-                    ]
 
-                    # インシデントのタイプと重要度を取得
-                    incident_type = (
-                        incident.get("incidentDetails", {})
-                        .get("type", {})
-                        .get("description", "Unknown")
-                    )
-                    criticality = incident.get("incidentDetails", {}).get(
-                        "criticality", {}
-                    )
+                        # 速度データ（APIレスポンスはm/s - 表示用にkm/hに変換）
+                        # HERE Traffic APIのspeed, freeFlow, speedUncappedはすべてメートル/秒
+                        speed = current_flow.get("speed", 0) * 3.6  # m/s を km/h に変換
+                        free_flow = (
+                            current_flow.get("freeFlow", 0) * 3.6
+                        )  # m/s を km/h に変換
+                        speed_uncapped = (
+                            current_flow.get("speedUncapped", 0) * 3.6
+                        )  # m/s を km/h に変換
+                        jam_factor = current_flow.get("jamFactor", 0)
+                        confidence = current_flow.get("confidence", 1.0)
+                        traversability = current_flow.get("traversability", "open")
 
-                    features.append(
-                        {
-                            "type": "Feature",
-                            "geometry": {"type": "LineString", "coordinates": coordinates},
-                            "properties": {
-                                "type": incident_type,
-                                "description": incident.get("incidentDetails", {})
-                                .get("description", {})
-                                .get("value", ""),
-                                "criticality": criticality.get("description", "Unknown"),
-                            },
-                        }
-                    )
+                        # パーセンテージと評価
+                        speed_percentage = calculate_speed_percentage(speed, free_flow)
+                        congestion_level = evaluate_jam_factor(jam_factor)
+                        is_confidence_low = confidence < 0.7
+
+                        # 道路セグメント情報
+                        length = location.get("length", 0)
+                        functional_class = links[0].get("functionalClass", 0)
+                        functional_class_name = get_functional_class_name(
+                            functional_class
+                        )
+
+                        # サブセグメント数のカウント
+                        sub_segments = current_flow.get("subSegments", [])
+                        sub_segment_count = len(sub_segments)
+
+                        features.append(
+                            {
+                                "type": "Feature",
+                                "geometry": {
+                                    "type": "LineString",
+                                    "coordinates": coordinates,
+                                },
+                                "properties": {
+                                    # 速度情報
+                                    "speed": round(speed, 1),
+                                    "freeFlow": round(free_flow, 1),
+                                    "speedUncapped": round(speed_uncapped, 1),
+                                    "speedPercentage": round(speed_percentage, 1),
+                                    # 混雑情報
+                                    "jamFactor": round(jam_factor, 2),
+                                    "congestionLevel": congestion_level,
+                                    # 信頼度
+                                    "confidence": round(confidence, 2),
+                                    "isConfidenceLow": is_confidence_low,
+                                    # 道路情報
+                                    "length": length,
+                                    "functionalClass": functional_class,
+                                    "functionalClassName": functional_class_name,
+                                    "traversability": traversability,
+                                    # セグメント情報
+                                    "subSegmentCount": sub_segment_count,
+                                },
+                            }
+                        )
 
         return {"type": "FeatureCollection", "features": features}
 
@@ -166,10 +251,19 @@ if not st.session_state.here_api_key:
                     ],
                 },
                 "properties": {
-                    "type": "CONGESTION",
-                    "description": "首都高速道路で渋滞が発生しています (Traffic congestion on the expressway)",
-                    "criticality": "Major",
-                    "speed": 15,
+                    "speed": 50.0,
+                    "freeFlow": 100,
+                    "speedUncapped": 120.0,
+                    "speedPercentage": 83.3,
+                    "jamFactor": 7.5,
+                    "congestionLevel": "重大",
+                    "confidence": 0.9,
+                    "isConfidenceLow": False,
+                    "length": 1850,
+                    "functionalClass": 1,
+                    "functionalClassName": "高速道路",
+                    "traversability": "open",
+                    "subSegmentCount": 3,
                 },
             },
             {
@@ -183,10 +277,44 @@ if not st.session_state.here_api_key:
                     ],
                 },
                 "properties": {
-                    "type": "CONSTRUCTION",
-                    "description": "道路工事のため車線規制中 (Road construction with lane restrictions)",
-                    "criticality": "Minor",
-                    "speed": 30,
+                    "speed": 40.8,
+                    "freeFlow": 60.0,
+                    "speedUncapped": 79.8,
+                    "speedPercentage": 60.0,
+                    "jamFactor": 4.2,
+                    "congestionLevel": "中程度",
+                    "confidence": 0.85,
+                    "isConfidenceLow": False,
+                    "length": 920,
+                    "functionalClass": 2,
+                    "functionalClassName": "主要幹線道路",
+                    "traversability": "open",
+                    "subSegmentCount": 1,
+                },
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [
+                        [139.79, 35.69],
+                        [139.80, 35.695],
+                    ],
+                },
+                "properties": {
+                    "speed": 40.4,
+                    "freeFlow": 50.0,
+                    "speedUncapped": 60.4,
+                    "speedPercentage": 80.0,
+                    "jamFactor": 1.2,
+                    "congestionLevel": "軽い",
+                    "confidence": 0.65,
+                    "isConfidenceLow": True,
+                    "length": 450,
+                    "functionalClass": 3,
+                    "functionalClassName": "補助幹線道路",
+                    "traversability": "open",
+                    "subSegmentCount": 0,
                 },
             },
         ],
@@ -196,9 +324,7 @@ if not st.session_state.here_api_key:
 else:
     # 実際のAPIから取得
     with st.spinner("交通情報を取得中..."):
-        traffic_geojson = fetch_traffic_incidents(
-            st.session_state.here_api_key, lat, lon
-        )
+        traffic_geojson = fetch_traffic_flow(st.session_state.here_api_key, lat, lon)
 
 # MapLibreで地図を作成
 st.subheader("🗺️ 交通情報マップ")
@@ -217,21 +343,19 @@ m.add_control(NavigationControl())  # pyright: ignore[reportCallIssue]
 if traffic_geojson["features"]:
     traffic_source = GeoJSONSource(data=traffic_geojson)  # pyright: ignore[reportCallIssue]
 
-    # 道路ラインレイヤー
+    # 道路ラインレイヤー（渋滞係数に基づいて色分け）
     traffic_layer = Layer(
         type=LayerType.LINE,
         source=traffic_source,
         paint={
             "line-color": [
-                "match",
-                ["get", "criticality"],
-                "Critical",
-                "#ff0000",
-                "Major",
-                "#ff6600",
-                "Minor",
-                "#ffaa00",
-                "#00aa00",  # デフォルト
+                "step",
+                ["get", "jamFactor"],
+                "#00aa00",  # jamFactor <= 2.0: 緑（軽い）
+                2.0,
+                "#ffaa00",  # jamFactor <= 6.0: 黄色（中程度）
+                6.0,
+                "#ff0000",  # jamFactor > 6.0: 赤（重大）
             ],
             "line-width": 6,
             "line-opacity": 0.8,
@@ -242,17 +366,82 @@ if traffic_geojson["features"]:
 
     st_maplibre(m, height=600)
 
-    # インシデント情報を表示
-    st.subheader("📋 検出された交通インシデント")
+    # 交通情報を表示
+    st.subheader("📋 検出された交通流量情報")
     for idx, feature in enumerate(traffic_geojson["features"], 1):
         props = feature["properties"]
-        with st.expander(f"{idx}. {props.get('type', 'Unknown')} - {props.get('criticality', 'Unknown')}"):
-            st.write(f"**詳細**: {props.get('description', '情報なし')}")
-            if "speed" in props:
-                st.write(f"**速度**: 約 {props['speed']} km/h")
+
+        # タイトル：混雑レベルと道路種別
+        congestion = props.get("congestionLevel", "不明")
+        road_type = props.get("functionalClassName", "不明")
+        jam_factor = props.get("jamFactor", 0)
+
+        # 混雑レベルに応じたアイコン
+        if congestion == "重大":
+            icon = "🔴"
+        elif congestion == "中程度":
+            icon = "🟡"
+        else:
+            icon = "🟢"
+
+        with st.expander(
+            f"{icon} {idx}. {road_type} - {congestion} (渋滞係数: {jam_factor})"
+        ):
+            # 速度情報セクション
+            st.markdown("### 🚗 速度情報")
+            with st.container(horizontal=True):
+                st.metric(
+                    "現在速度",
+                    f"{props.get('speed', 0):.1f} km/h",
+                )
+
+                st.metric(
+                    "自由流速度",
+                    f"{props.get('freeFlow', 0):.1f} km/h",
+                )
+
+                speed_pct = props.get("speedPercentage", 100)
+                st.metric(
+                    "速度比率",
+                    f"{speed_pct:.1f}%",
+                    delta=f"{speed_pct - 100:.1f}%" if speed_pct < 100 else None,
+                    delta_color="inverse",
+                )
+
+            # 混雑情報セクション
+            st.markdown("### 🚦 混雑情報")
+            with st.container(horizontal=True):
+                st.write(f"**渋滞係数**: {jam_factor:.2f} / 10.0")
+                st.write(f"**混雑レベル**: {congestion}")
+
+                confidence = props.get("confidence", 1.0)
+                st.write(f"**データ信頼度**: {confidence * 100:.0f}%")
+                if props.get("isConfidenceLow", False):
+                    st.warning("⚠️ 信頼度が低い可能性があります")
+
+            # 道路セグメント情報
+            st.markdown("### 🛣️ 道路情報")
+            with st.container(horizontal=True):
+                length = props.get("length", 0)
+                st.write(f"**セグメント長**: {length:,} m")
+
+                st.write(f"**道路等級**: {road_type}")
+
+                sub_count = props.get("subSegmentCount", 0)
+                if sub_count > 0:
+                    st.write(f"**サブセグメント**: {sub_count} 箇所")
+                else:
+                    st.write("**サブセグメント**: なし")
+
+            # 通行可能性
+            traversability = props.get("traversability", "unknown")
+            if traversability == "open":
+                st.success("✅ 通行可能")
+            else:
+                st.error(f"❌ 通行状態: {traversability}")
 else:
     st_maplibre(m, height=600)
-    st.info("この地域には現在交通インシデントが検出されていません。")
+    st.info("この地域には現在交通流量情報が検出されていません。")
 
 # 使い方の説明
 st.divider()
@@ -261,24 +450,28 @@ st.markdown(
 ### 📖 使い方
 
 1. **APIキーの取得**
-   - [HERE Developer Portal](https://developer.here.com/)でアカウントを作成
-   - 新しいプロジェクトを作成し、API Keyを生成
-   - サイドバーにAPIキーを入力
+    - [HERE Developer Portal](https://developer.here.com/)でアカウントを作成
+    - 新しいプロジェクトを作成し、API Keyを生成
+    - サイドバーにAPIキーを入力
 
 2. **地点の選択**
-   - サンプル地点ボタンで主要都市を選択、または
-   - 緯度・経度を直接入力してカスタム地点を表示
+    - サンプル地点ボタンで主要都市を選択、または
+    - 緯度・経度を直接入力してカスタム地点を表示
 
 3. **交通情報の確認**
-   - 地図上の色付きラインが交通インシデントを示します
-   - **赤**: 重大な渋滞・事故
-   - **オレンジ**: 中程度の渋滞
-   - **黄色**: 軽度の影響
-   - 各インシデントの詳細は下部のリストで確認できます
+    - 地図上の色付きラインが交通インシデントを示します
+    - **赤**: 重大な渋滞・事故
+    - **オレンジ**: 中程度の渋滞
+    - **黄色**: 軽度の影響
+    - 各インシデントの詳細は下部のリストで確認できます
 
 ### 🎓 学習ポイント
 
 - **HERE Traffic API**: リアルタイムの交通情報を提供する強力なAPI
+  - **速度の単位**: API レスポンスはメートル/秒（m/s）で返却され、表示用に km/h に変換
+  - **speed**: 現在の道路速度（m/s）
+  - **freeFlow**: 交通量がない時の基準速度（m/s）
+  - **speedUncapped**: 法定速度制限を超える場合がある予想速度（m/s）
 - **MapLibre**: オープンソースの地図ライブラリで、カスタマイズ性が高い
 - **GeoJSON**: 地理情報を標準化された形式で扱う
 - **Streamlit Caching**: APIレスポンスをキャッシュしてパフォーマンス向上
