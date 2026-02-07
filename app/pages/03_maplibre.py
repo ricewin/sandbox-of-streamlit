@@ -1,6 +1,6 @@
 import streamlit as st
 from maplibre.basemaps import Carto
-from maplibre.controls import Marker, NavigationControl
+from maplibre.controls import NavigationControl
 from maplibre.layer import Layer, LayerType
 from maplibre.map import Map, MapOptions
 from maplibre.sources import GeoJSONSource
@@ -43,18 +43,64 @@ with tabs[0]:
     m1 = Map(map_options)
     m1.add_control(NavigationControl())  # pyright: ignore[reportCallIssue]
 
-    # 複数のマーカーを追加
-    locations = [
-        (139.767, 35.681),  # 東京駅
-        (139.7, 35.658),  # 六本木
-        (139.8, 35.7),  # スカイツリー
-    ]
+    # 複数のマーカーを追加（GeoJSONで管理してツールチップを表示）
+    marker_data = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [139.767, 35.681],
+                },
+                "properties": {"name": "東京駅", "description": "東京の中心駅"},
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [139.7, 35.658],
+                },
+                "properties": {"name": "六本木", "description": "商業・娯楽エリア"},
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "Point",
+                    "coordinates": [139.8, 35.7],
+                },
+                "properties": {
+                    "name": "スカイツリー",
+                    "description": "高さ634mのタワー",
+                },
+            },
+        ],
+    }
 
-    for lng, lat in locations:
-        marker = Marker(lng_lat=(lng, lat))
-        m1.add_marker(marker)
+    def create_marker_layer(data: dict) -> dict:
+        return {
+            "@@type": "GeoJsonLayer",
+            "id": "MarkerLayer",
+            "data": data,
+            "pickable": True,
+            "stroked": True,
+            "filled": True,
+            "lineWidthMinPixels": 2,
+            "getRadius": 200,
+            "getFillColor": [56, 135, 190, 200],
+            "getLineColor": [255, 255, 255],
+        }
 
+    m1.add_deck_layers(
+        [create_marker_layer(marker_data)],
+        tooltip="Name: {{ properties.name }}, Description: {{ properties.description }}",
+    )
     st_maplibre(m1, height=500)
+
+    # マーカー情報の表示
+    st.info(
+        "📍 **マーカー情報**: 東京駅（東京の中心駅）、六本木（商業・娯楽エリア）、スカイツリー（高さ634mのタワー）"
+    )
 
 # タブ2: Circle Layer
 with tabs[1]:
@@ -87,32 +133,29 @@ with tabs[1]:
         ],
     }
 
-    circle_source = GeoJSONSource(data=circle_data)  # pyright: ignore[reportCallIssue]
+    def create_circle_layer(data: dict) -> dict:
+        return {
+            "@@type": "GeoJsonLayer",
+            "id": "CircleLayer",
+            "data": data,
+            "pickable": True,
+            "stroked": True,
+            "filled": True,
+            "lineWidthMinPixels": 2,
+            "getRadius": "@@=properties.value",
+            "getFillColor": [255, 0, 0, 100],
+            "getLineColor": [255, 255, 255],
+        }
 
-    circle_layer = Layer(
-        type=LayerType.CIRCLE,
-        source=circle_source,
-        paint={
-            "circle-radius": ["*", 0.3, ["get", "value"]],  # 値に応じて半径を変更
-            "circle-color": [
-                "interpolate",
-                ["linear"],
-                ["get", "value"],
-                0,
-                "#ffffcc",
-                50,
-                "#ff9900",
-                100,
-                "#ff0000",
-            ],
-            "circle-opacity": 0.8,
-            "circle-stroke-width": 2,
-            "circle-stroke-color": "#ffffff",
-        },
-    )  # pyright: ignore[reportCallIssue]
-
-    m2.add_layer(circle_layer)
+    m2.add_deck_layers(
+        [create_circle_layer(circle_data)],
+        tooltip="Value: {{ properties.value }}",
+    )
     st_maplibre(m2, height=500)
+
+    st.info(
+        "💡 **表示内容**: 円の大きさと色が値を表しています。値が大きいほど円が大きく、色が赤くなります。マウスホバーでツールチップを表示します。"
+    )
 
 # タブ3: Heatmap
 with tabs[2]:
@@ -149,6 +192,7 @@ with tabs[2]:
     heatmap_source = GeoJSONSource(data=heatmap_data)  # pyright: ignore[reportCallIssue]
 
     heatmap_layer = Layer(
+        id="HeatmapLayer",
         type=LayerType.HEATMAP,
         source=heatmap_source,
         paint={
@@ -177,6 +221,8 @@ with tabs[2]:
 
     m3.add_layer(heatmap_layer)
     st_maplibre(m3, height=500)
+
+    st.info("🔥 **ヒートマップ**: データの密度が高い場所ほど赤く表示されます。")
 
 # タブ4: Line Layer
 with tabs[3]:
@@ -221,18 +267,21 @@ with tabs[3]:
     line_source = GeoJSONSource(data=line_data)  # pyright: ignore[reportCallIssue]
 
     line_layer = Layer(
+        id="LineLayer",
         type=LayerType.LINE,
         source=line_source,
         paint={
             "line-color": "#00aa00",
             "line-width": 4,
             "line-opacity": 0.8,
-            "line-dasharray": [4, 2],  # 破線（ズームや線幅に応じて調整可能）
+            "line-dasharray": [4, 2],
         },
     )  # pyright: ignore[reportCallIssue]
 
     m4.add_layer(line_layer)
     st_maplibre(m4, height=500)
+
+    st.info("🛣️ **ルート**: 山手線を簡略化したルートを破線で表示しています。")
 
 # タブ5: Fill Layer
 with tabs[4]:
@@ -287,40 +336,29 @@ with tabs[4]:
         ],
     }
 
-    polygon_source = GeoJSONSource(data=polygon_data)  # pyright: ignore[reportCallIssue]
+    def create_fill_layer(data: dict) -> dict:
+        return {
+            "@@type": "GeoJsonLayer",
+            "id": "FillLayer",
+            "data": data,
+            "pickable": True,
+            "stroked": True,
+            "filled": True,
+            "wireframe": False,
+            "getFillColor": [76, 175, 80, 200],
+            "getLineColor": [0, 0, 0],
+            "getLineWidth": 2,
+        }
 
-    fill_layer = Layer(
-        type=LayerType.FILL,
-        source=polygon_source,
-        paint={
-            "fill-color": [
-                "interpolate",
-                ["linear"],
-                ["get", "density"],
-                0,
-                "#ffffcc",
-                100,
-                "#78c679",
-                200,
-                "#006837",
-            ],
-            "fill-opacity": 0.5,
-        },
-    )  # pyright: ignore[reportCallIssue]
-
-    # 境界線レイヤーも追加
-    outline_layer = Layer(
-        type=LayerType.LINE,
-        source=polygon_source,
-        paint={
-            "line-color": "#000000",
-            "line-width": 2,
-        },
-    )  # pyright: ignore[reportCallIssue]
-
-    m5.add_layer(fill_layer)
-    m5.add_layer(outline_layer)
+    m5.add_deck_layers(
+        [create_fill_layer(polygon_data)],
+        tooltip="Name: {{ properties.name }}, Density: {{ properties.density }}",
+    )
     st_maplibre(m5, height=500)
+
+    st.info(
+        "🏢 **エリア情報**: エリア1（密度100）とエリア2（密度200）。マウスホバーでエリア情報を確認できます。"
+    )
 
 # タブ6: 3D Extrusion
 with tabs[5]:
@@ -356,7 +394,7 @@ with tabs[5]:
                         ]
                     ],
                 },
-                "properties": {"height": 150},
+                "properties": {"height": 150, "name": "ビル1"},
             },
             {
                 "type": "Feature",
@@ -372,7 +410,7 @@ with tabs[5]:
                         ]
                     ],
                 },
-                "properties": {"height": 200},
+                "properties": {"height": 200, "name": "ビル2"},
             },
             {
                 "type": "Feature",
@@ -388,36 +426,36 @@ with tabs[5]:
                         ]
                     ],
                 },
-                "properties": {"height": 100},
+                "properties": {"height": 100, "name": "ビル3"},
             },
         ],
     }
 
-    building_source = GeoJSONSource(data=building_data)  # pyright: ignore[reportCallIssue]
+    def create_extrusion_layer(data: dict) -> dict:
+        return {
+            "@@type": "GeoJsonLayer",
+            "id": "ExtrusionLayer",
+            "data": data,
+            "pickable": True,
+            "stroked": True,
+            "filled": True,
+            "extruded": True,
+            "wireframe": False,
+            "getElevation": "@@=properties.height * 10",
+            "getFillColor": [200, 100, 50, 200],
+            "getLineColor": [255, 255, 255],
+            "getLineWidth": 1,
+        }
 
-    extrusion_layer = Layer(
-        type=LayerType.FILL_EXTRUSION,
-        source=building_source,
-        paint={
-            "fill-extrusion-color": [
-                "interpolate",
-                ["linear"],
-                ["get", "height"],
-                0,
-                "#ffeda0",
-                100,
-                "#f03b20",
-                200,
-                "#bd0026",
-            ],
-            "fill-extrusion-height": ["get", "height"],
-            "fill-extrusion-base": 0,
-            "fill-extrusion-opacity": 0.9,
-        },
-    )  # pyright: ignore[reportCallIssue]
-
-    m6.add_layer(extrusion_layer)
+    m6.add_deck_layers(
+        [create_extrusion_layer(building_data)],
+        tooltip="Name: {{ properties.name }}, Height: {{ properties.height }}m",
+    )
     st_maplibre(m6, height=500)
+
+    st.info(
+        "🏗️ **3Dビル**: 高さ100m、150m、200mの3つのビルを3D表示。マウスホバーでビル情報を確認できます。"
+    )
 
 # タブ7: 複数スタイル比較
 with tabs[6]:
@@ -444,8 +482,39 @@ with tabs[6]:
             m_style = Map(map_options)
             m_style.add_control(NavigationControl())  # pyright: ignore[reportCallIssue]
 
-            marker = Marker(lng_lat=(139.767, 35.681))
-            m_style.add_marker(marker)
+            # ツールチップ付きマーカー
+            style_marker_data = {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Point",
+                            "coordinates": [139.767, 35.681],
+                        },
+                        "properties": {"name": "東京駅", "style": name},
+                    }
+                ],
+            }
+
+            def create_style_marker_layer(data: dict) -> dict:
+                return {
+                    "@@type": "GeoJsonLayer",
+                    "id": "StyleMarkerLayer",
+                    "data": data,
+                    "pickable": True,
+                    "stroked": True,
+                    "filled": True,
+                    "lineWidthMinPixels": 2,
+                    "getRadius": 200,
+                    "getFillColor": [56, 135, 190, 200],
+                    "getLineColor": [255, 255, 255],
+                }
+
+            m_style.add_deck_layers(
+                [create_style_marker_layer(style_marker_data)],
+                tooltip="Station: {{ properties.name }}",
+            )
 
             st_maplibre(m_style, height=300)
 
@@ -460,6 +529,7 @@ st.markdown(
 - **Fill Extrusion**: 3D表現でビルや高さ情報を表現
 - **Style**: 用途に応じてベースマップを選択可能
 
-各レイヤーの`paint`プロパティで、色・サイズ・透明度などを細かく制御できます。
+各レイヤーの`paint`プロパティで、色・サイズ・透明度などを細かく制御できます。  
+各タブの地図下に表示される情報で、データの内容を確認できます。
 """
 )
