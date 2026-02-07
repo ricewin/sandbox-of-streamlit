@@ -16,8 +16,8 @@
 
 - Install deps with `uv sync` (see [README.md](README.md) and [pyproject.toml](pyproject.toml)).
 - Run locally with `./run_app.sh`, which executes `uv run streamlit run app/main.py` with CORS/XSRF disabled (see [run_app.sh](run_app.sh)).
-- When Python files change, run type check with `pyright`, then `ruff check` and `ruff format` (ruff is listed in [pyproject.toml](pyproject.toml)).
-- When Markdown files change, run markdownlint.
+- When Python files change, run `ruff check` and `ruff format` (ruff is listed in [pyproject.toml](pyproject.toml)).
+- When Markdown files change, consider running markdownlint locally if you have it installed (note: this repo does not include markdownlint config or CI).
 
 ## Project-specific conventions
 
