@@ -49,6 +49,10 @@ jobs:
           uv run ruff check .
           uv run ruff format --check .
 
+      - name: Type check (pyright:basic)
+        run: |
+          uv run pyright
+
       - name: Run tests
         run: |
           if [ -d .venv ]; then

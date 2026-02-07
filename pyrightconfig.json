@@ -1,0 +1,11 @@
+{
+  "typeCheckingMode": "basic",
+  "include": [
+    "app"
+  ],
+  "exclude": [
+    "**/__pycache__",
+    "**/.venv",
+    "**/node_modules"
+  ]
+}

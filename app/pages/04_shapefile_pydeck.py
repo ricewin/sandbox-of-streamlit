@@ -314,7 +314,7 @@ if gdf is not None:
     with col2:
         if len(gdf) > 0 and not gdf.geometry.empty:
             try:
-                geometry_type_metric = gdf.geometry.type.value_counts().index[0]
+                geometry_type_metric = str(gdf.geometry.type.value_counts().index[0])
             except IndexError, KeyError:
                 geometry_type_metric = "N/A"
         else:
