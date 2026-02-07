@@ -10,6 +10,7 @@ def navigation() -> None:
             st.Page("pages/03_maplibre.py", title="Maplibre Map"),
             st.Page("pages/04_shapefile_pydeck.py", title="Shapefile Visualization"),
             st.Page("pages/05_isochrone_api.py", title="Mapbox Isochrone API"),
+            st.Page("pages/06_here_traffic.py", title="HERE Traffic API"),
         ],
         # "Resources": [
         #     st.Page("pages/learn.py", title="Learn about me"),
