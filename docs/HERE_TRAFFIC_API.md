@@ -29,6 +29,7 @@
 4. API Keyを生成
 
 **無料プラン**:
+
 - 月間250,000トランザクションまで無料
 - Traffic APIを含む主要なAPIにアクセス可能
 
@@ -37,11 +38,14 @@
 2つの方法でAPIキーを設定できます：
 
 #### 方法1: アプリケーション内で入力（推奨）
+
 - サイドバーのテキストフィールドにAPIキーを入力
 - セッション中のみ有効
 
 #### 方法2: Streamlit Secretsを使用
+
 `.streamlit/secrets.toml`を作成：
+
 ```toml
 [here]
 api_key = "your_here_api_key_here"
@@ -79,18 +83,19 @@ api_key = "your_here_api_key_here"
 def fetch_traffic_flow(api_key, lat, lon, radius=5000):
     """HERE Traffic Flow APIから交通流量情報を取得"""
     base_url = "https://data.traffic.hereapi.com/v7/flow"
-    
+
     params = {
         "apiKey": api_key,
         "in": f"circle:{lat},{lon};r={radius}",
         "locationReferencing": "shape",
     }
-    
+
     response = requests.get(base_url, params=params, timeout=10)
     # ... GeoJSON形式に変換
 ```
 
 **ポイント**:
+
 - `@st.cache_data(ttl=300)`: APIコールを5分間キャッシュしてパフォーマンス向上
 - `locationReferencing="shape"`: 道路の形状情報を取得
 - `in` パラメータ: 検索範囲を指定（円形、半径5km）
@@ -130,6 +135,7 @@ traffic_layer = Layer(
 ```
 
 **ポイント**:
+
 - データ駆動スタイリング: `jamFactor`プロパティに基づいて色を変更
 - `step` 式: 渋滞係数の閾値で段階的に色を変更
 - LineStringジオメトリで道路セグメントを表示
@@ -140,6 +146,7 @@ traffic_layer = Layer(
 このチュートリアルを基に、以下のような拡張が可能です：
 
 ### 1. ルート案内との統合
+
 ```python
 # HERE Routing APIと組み合わせ
 route = get_route(origin, destination, avoid_traffic=True)
@@ -147,6 +154,7 @@ traffic_on_route = filter_flows_on_route(route, traffic_flows)
 ```
 
 ### 2. 時系列分析
+
 ```python
 # 定期的にデータを収集して傾向分析
 traffic_history = collect_traffic_over_time(location, days=7)
@@ -154,6 +162,7 @@ plot_congestion_patterns(traffic_history)
 ```
 
 ### 3. アラート機能
+
 ```python
 # 重大な渋滞を検出したら通知
 if any(flow['jamFactor'] > 8.0 for flow in traffic_flows):
@@ -161,6 +170,7 @@ if any(flow['jamFactor'] > 8.0 for flow in traffic_flows):
 ```
 
 ### 4. 複数地点の比較
+
 ```python
 # 複数の主要地点の交通状況を比較
 locations = ["東京駅", "新宿駅", "渋谷駅"]
@@ -180,8 +190,8 @@ traffic_comparison = compare_traffic_across_locations(locations)
           "links": [
             {
               "points": [
-                {"lat": 35.681, "lng": 139.767},
-                {"lat": 35.682, "lng": 139.768}
+                { "lat": 35.681, "lng": 139.767 },
+                { "lat": 35.682, "lng": 139.768 }
               ],
               "functionalClass": 1
             }
@@ -214,7 +224,10 @@ traffic_comparison = compare_traffic_across_locations(locations)
       "type": "Feature",
       "geometry": {
         "type": "LineString",
-        "coordinates": [[139.767, 35.681], [139.768, 35.682]]
+        "coordinates": [
+          [139.767, 35.681],
+          [139.768, 35.682]
+        ]
       },
       "properties": {
         "speed": 50.0,
@@ -251,17 +264,20 @@ traffic_comparison = compare_traffic_across_locations(locations)
 ## 🔗 参考リンク
 
 ### HERE Platform
+
 - [HERE Traffic API Documentation](https://developer.here.com/documentation/traffic-api/dev_guide/index.html)
 - [HERE Traffic Flow API Reference](https://developer.here.com/documentation/traffic-api/dev_guide/topics/resource-type-flow.html)
 - [HERE Developer Portal](https://developer.here.com/)
 - [HERE API Playground](https://developer.here.com/documentation/examples/rest/traffic/traffic-flow)
 
 ### MapLibre
+
 - [MapLibre GL JS Documentation](https://maplibre.org/maplibre-gl-js-docs/api/)
 - [MapLibre Python Bindings](https://github.com/eodaGmbH/py-maplibregl)
 - [MapLibre Style Specification](https://maplibre.org/maplibre-style-spec/)
 
 ### Streamlit
+
 - [Streamlit Documentation](https://docs.streamlit.io/)
 - [Streamlit Caching Guide](https://docs.streamlit.io/library/advanced-features/caching)
 - [Streamlit Secrets Management](https://docs.streamlit.io/library/advanced-features/secrets-management)
@@ -269,21 +285,25 @@ traffic_comparison = compare_traffic_across_locations(locations)
 ## 💡 トラブルシューティング
 
 ### API呼び出しが失敗する
+
 - APIキーが正しいか確認
 - HERE Developer Portalでプロジェクトのステータスを確認
 - レート制限に達していないか確認
 
 ### 地図が表示されない
+
 - ブラウザのコンソールでエラーを確認
 - MapLibreのバージョン互換性を確認
 - GeoJSONデータの形式が正しいか確認
 
 ### パフォーマンスが遅い
+
 - キャッシュのTTL（Time To Live）を調整
 - 検索半径を小さくする
 - 表示する道路セグメント数を制限
 
 ### データが表示されない
+
 - 選択した地域に交通流量データがあるか確認
 - APIレスポンスが正しく変換されているか確認
 - デモモードで動作確認してから実際のAPIを試す
@@ -302,6 +322,7 @@ traffic_comparison = compare_traffic_across_locations(locations)
 ## 🎓 まとめ
 
 このチュートリアルでは：
+
 - ✅ HERE Traffic Flow APIの基本的な使用方法を学習
 - ✅ MapLibreでのデータ可視化技術を習得
 - ✅ Streamlitでのインタラクティブアプリケーション開発
