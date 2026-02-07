@@ -149,12 +149,8 @@ def fetch_traffic_flow(api_key, lat, lon, radius=5000):
                         # 速度データ（APIレスポンスはm/s - 表示用にkm/hに変換）
                         # HERE Traffic APIのspeed, freeFlow, speedUncappedはすべてメートル/秒
                         speed = current_flow.get("speed", 0) * 3.6  # m/s を km/h に変換
-                        free_flow = (
-                            current_flow.get("freeFlow", 0) * 3.6
-                        )  # m/s を km/h に変換
-                        speed_uncapped = (
-                            current_flow.get("speedUncapped", 0) * 3.6
-                        )  # m/s を km/h に変換
+                        free_flow = current_flow.get("freeFlow", 0) * 3.6
+                        speed_uncapped = current_flow.get("speedUncapped", 0) * 3.6
                         jam_factor = current_flow.get("jamFactor", 0)
                         confidence = current_flow.get("confidence", 1.0)
                         traversability = current_flow.get("traversability", "open")
