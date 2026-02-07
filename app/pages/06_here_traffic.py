@@ -311,11 +311,11 @@ else:
     # 実際のAPIから取得
     with st.spinner("交通情報を取得中..."):
         traffic_geojson = fetch_traffic_flow(st.session_state.here_api_key, lat, lon)
-    
+
     # エラーハンドリング（キャッシュの外）
     if "error" in traffic_geojson:
         st.error(traffic_geojson["error"])
-    
+
     # デバッグ用：レスポンスの一部を表示（キャッシュの外）
     if traffic_geojson["features"]:
         with st.expander("🔍 取得データ数", expanded=False):
